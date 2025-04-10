@@ -3,7 +3,7 @@ const expect = std.testing.expect;
 
 // Column-major order matrix (aka Fortran-style)
 // See also: https://en.wikipedia.org/wiki/Row-_and_column-major_order
-
+// This comptime function creates a matrix with cells of type t and with rs rows and cs columns.
 pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
     const ti = @typeInfo(t);
     const size = rs * cs;
@@ -32,7 +32,7 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
 
         data: *[size]t,
 
-        // The Constructor take an optional function that can initialize the matrix in a custom way
+        // The Constructor takes an optional function that can initialize the matrix in a custom way
         // If no initializaton function is given, all values are set to zero.
         pub fn init(f: ?fn (usize, usize) t) !Self {
             const allocator = std.heap.page_allocator;
@@ -55,12 +55,12 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
 
         // methods
 
-        // read an cell using column-major method
+        // Read a cell using column-major method
         pub inline fn at(self: Self, row: usize, col: usize) t {
             return self.data[col * rs + row];
         }
 
-        // set a cell to the given value using column-major method
+        // Set a cell to the given value using column-major method
         pub inline fn set(self: Self, row: usize, col: usize, value: t) void {
             self.data[col * rs + row] = value;
         }
