@@ -71,7 +71,7 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
 // The resulting matrix has size [M x N].
 // The caller should provide as a first argument a matrix of the appropriate size with all its cells set to zero.
 // Notice that in the innermost loop, only the row indeces are changed,
-// therefore - due to colum-major order - the data are accessed in a continuous manner minimizing cache misses.
+// therefore - due to column-major order - the data are accessed in a continuous manner minimizing cache misses.
 pub fn matrix_multiply(comptime t: type, m: comptime_int, k: comptime_int, n: comptime_int) (fn (Matrix(t, m, n), Matrix(t, m, k), Matrix(t, k, n)) void) {
     return struct {
         fn multiply(result: Matrix(t, m, n), m1: Matrix(t, m, k), m2: Matrix(t, k, n)) void {
