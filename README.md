@@ -1,7 +1,7 @@
 # Matrix multiplication in Zig
 
 This program demonstrates how a matrix multiplication similar to Fortran's `matmul` could be implemented in `zig`.
-For not very big matrixes up to 1024x1024, its performance is similar or even faster than `gfortran`. For bigger matrixes though, gfortran semms to be much faster (at least in my machine).
+For not very big matrixes up to 1024x1024, its performance is similar or even faster than `gfortran`. For bigger matrixes though, gfortran seεms to be much faster (at least in my machine).
 
 ## Requirements
 Zig 0.14 (not tested with other zig compiler versions)
