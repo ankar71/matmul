@@ -176,21 +176,24 @@ pub fn main() !void {
     @setFloatMode(.optimized);
 
     // Change the following values to experiment with different types and sizes
-    const size = 1024; // one dimension for square matrixes
+    const size_m = 640;
+    const size_k = 512;
+    const size_n = 640;
     const cell_t = f64;
-    const ntimes = 50;
+    const ntimes = 100;
 
-    std.debug.print("Matrix size: {}x{}, type: {}\n", .{ size, size, cell_t });
-
-    var m1 = try Matrix(cell_t, size, size).init(const_filler(cell_t, 1));
+    var m1 = try Matrix(cell_t, size_m, size_k).init(const_filler(cell_t, 1));
+    std.debug.print("Matrix 1: {}x{}, type {}\n", .{ size_m, size_k, cell_t });
     defer m1.deinit();
 
-    var m2 = try Matrix(cell_t, size, size).init(const_filler(cell_t, 1));
+    std.debug.print("Matrix 2: {}x{}, type {}\n", .{ size_k, size_n, cell_t });
+    var m2 = try Matrix(cell_t, size_k, size_n).init(const_filler(cell_t, 1));
     defer m2.deinit();
 
-    const multiply = matrix_multiply(cell_t, size, size, size);
-
-    var product = try Matrix(cell_t, size, size).init(const_filler(cell_t, 0));
+    // 'multiply' is a function that multiplies a MxK matrix with a KxN matrix
+    // and produces a MxN matrix.
+    const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
+    var product = try Matrix(cell_t, size_m, size_n).init(const_filler(cell_t, 0));
     defer product.deinit();
 
     const start_time = std.time.milliTimestamp();
@@ -199,7 +202,7 @@ pub fn main() !void {
     }
     const end_time = std.time.milliTimestamp();
 
-    std.debug.print("Type of product is: {}\n", .{@TypeOf(product)});
+    std.debug.print("Product : {}x{}, type {}\n", .{ size_m, size_n, cell_t });
     const total_time = end_time - start_time;
     const secs = @divFloor(total_time, 1000);
     const msecs = @rem(total_time, 1000);
