@@ -187,7 +187,7 @@ pub fn main() !void {
     defer m1.deinit();
 
     std.debug.print("Matrix 2: {}x{}, type {}\n", .{ size_k, size_n, cell_t });
-    var m2 = try Matrix(cell_t, size_k, size_n).init(const_filler(cell_t, 1));
+    var m2 = try Matrix(cell_t, size_k, size_n).init(null);
     defer m2.deinit();
 
     // 'multiply' is a function that multiplies a MxK matrix with a KxN matrix
