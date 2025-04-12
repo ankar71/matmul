@@ -8,4 +8,9 @@ Zig 0.14 (not tested with other zig compiler versions)
 
 ## Usage
 Run `make test` to run the tests and `make build` to build the executable named `matmul`.
-Modify the main routine to experiment with different types and sizes.
+The try
+```
+matmul [n]
+```
+where `n` is the number of repetitions (default is 10).
+Modify the main routine to experiment with different types and sizes. Very big matrixes (like 4096x4096) take many seconds, use `1` as `n` in this case.

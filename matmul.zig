@@ -175,12 +175,23 @@ test "multiply const matrix" {
 pub fn main() !void {
     @setFloatMode(.optimized);
 
+    const args = try std.process.argsAlloc(std.heap.page_allocator);
+    defer std.process.argsFree(std.heap.page_allocator, args);
+    var ntimes: usize = 10;
+    if (args.len >= 2) {
+        if (std.fmt.parseUnsigned(usize, args[1], 0)) |times| {
+            ntimes = times;
+        } else |_| {
+            std.debug.print("Invalid value '{s}' ignored\n", .{args[1]});
+        }
+    }
+    std.debug.print("Multiplication will be repeated {} times\n", .{ntimes});
+
     // Change the following values to experiment with different types and sizes
     const size_m = 640;
     const size_k = 512;
     const size_n = 640;
     const cell_t = f64;
-    const ntimes = 100;
 
     var m1 = try Matrix(cell_t, size_m, size_k).init(const_filler(cell_t, 1));
     std.debug.print("Matrix 1: {}x{}, type {}\n", .{ size_m, size_k, cell_t });
