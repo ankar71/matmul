@@ -67,7 +67,7 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
     };
 }
 
-// Generic method that produces a matrix multiply-method for two matrixes [M x K] and [K x M].
+// Generic method that produces a matrix multiply-method for two matrixes [M x K] and [K x N].
 // The resulting matrix has size [M x N].
 // The caller should provide as a first argument a matrix of the appropriate size with all its cells set to zero.
 // Notice that in the innermost loop, only the row indeces are changed,
