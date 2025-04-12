@@ -77,9 +77,9 @@ pub fn matrix_multiply(comptime t: type, m: comptime_int, k: comptime_int, n: co
         fn multiply(result: Matrix(t, m, n), m1: Matrix(t, m, k), m2: Matrix(t, k, n)) void {
             for (0..n) |j| {
                 for (0..k) |kk| {
-                    const m2_at_k_j = m2.at(kk, j);
+                    const m2_at_kk_j = m2.at(kk, j);
                     for (0..m) |i| {
-                        const v = result.at(i, j) + m1.at(i, kk) * m2_at_k_j;
+                        const v = result.at(i, j) + m1.at(i, kk) * m2_at_kk_j;
                         result.set(i, j, v);
                     }
                 }
