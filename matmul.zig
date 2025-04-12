@@ -186,14 +186,14 @@ pub fn main() !void {
     std.debug.print("Matrix 1: {}x{}, type {}\n", .{ size_m, size_k, cell_t });
     defer m1.deinit();
 
+    var m2 = try Matrix(cell_t, size_k, size_n).init(const_filler(cell_t, 1));
     std.debug.print("Matrix 2: {}x{}, type {}\n", .{ size_k, size_n, cell_t });
-    var m2 = try Matrix(cell_t, size_k, size_n).init(null);
     defer m2.deinit();
 
     // 'multiply' is a function that multiplies a MxK matrix with a KxN matrix
     // and produces a MxN matrix.
     const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
-    var product = try Matrix(cell_t, size_m, size_n).init(const_filler(cell_t, 0));
+    var product = try Matrix(cell_t, size_m, size_n).init(null);
     defer product.deinit();
 
     const start_time = std.time.milliTimestamp();
