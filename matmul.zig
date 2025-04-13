@@ -60,6 +60,11 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
             return self.data[col * rs + row];
         }
 
+        pub inline fn slice_at(self: Self, row: usize, col: usize, slice_size: usize) []t {
+            const offset: usize = col * rs + row;
+            return self.data[offset..(offset + slice_size)];
+        }
+
         // Set a cell to the given value using column-major method
         pub inline fn set(self: Self, row: usize, col: usize, value: t) void {
             self.data[col * rs + row] = value;
@@ -81,6 +86,41 @@ pub fn matrix_multiply(comptime t: type, m: comptime_int, k: comptime_int, n: co
                     for (0..m) |i| {
                         const v = result.at(i, j) + m1.at(i, kk) * m2_at_kk_j;
                         result.set(i, j, v);
+                    }
+                }
+            }
+        }
+    }.multiply;
+}
+
+// Similar to matrix_multiply, uses vectors
+pub fn matrix_vec_multiply(comptime t: type, m: comptime_int, k: comptime_int, n: comptime_int) (fn (Matrix(t, m, n), Matrix(t, m, k), Matrix(t, k, n)) void) {
+    // Use the suggested vector length or 4 as default. You can experiment with different vector lengths
+    const veclen = std.simd.suggestVectorLength(t) orelse 4;
+    const loop_count = @divFloor(m, veclen);
+    const rem = m % veclen;
+
+    return struct {
+        fn multiply(result: Matrix(t, m, n), m1: Matrix(t, m, k), m2: Matrix(t, k, n)) void {
+            for (0..n) |j| {
+                for (0..k) |kk| {
+                    const v2: @Vector(veclen, t) = @splat(m2.at(kk, j));
+                    for (0..loop_count) |count| {
+                        const i = count * veclen;
+                        const result_slice = result.slice_at(i, j, veclen);
+                        const pr: @Vector(veclen, t) = result_slice[0..veclen].*;
+                        const v1: @Vector(veclen, t) = m1.slice_at(i, kk, veclen)[0..veclen].*;
+                        result_slice[0..veclen].* = pr + v1 * v2;
+                    }
+                    // this part is emmited only if the M-dimension is not divided exctly by the vector length used
+                    inline while (rem > 0) {
+                        const i_rem = loop_count * veclen;
+                        const v2r: @Vector(rem, t) = @splat(m2.at(kk, j));
+                        const result_slice = result.slice_at(i_rem, j, rem);
+                        const pr: @Vector(rem, t) = result_slice[0..rem].*;
+                        const v1: @Vector(rem, t) = m1.slice_at(i_rem, kk, rem)[0..rem].*;
+                        result_slice[0..rem].* = pr + v1 * v2r;
+                        break;
                     }
                 }
             }
@@ -138,13 +178,17 @@ test "multiply with identity matrix" {
     var m2 = try Matrix(cell_t, size, size).init(diagonal_filler(cell_t, 1));
     defer m2.deinit();
 
-    const multiply = matrix_multiply(cell_t, size, size, size);
-
     var result = try Matrix(cell_t, size, size).init(null);
     defer result.deinit();
 
+    const multiply = matrix_multiply(cell_t, size, size, size);
     multiply(result, m1, m2);
+    try expect(std.mem.eql(cell_t, m1.data, result.data));
 
+    // repeate using use vectors
+    const vec_multiply = matrix_vec_multiply(cell_t, size, size, size);
+    result.data.* = [_]cell_t{0} ** (size * size);
+    vec_multiply(result, m1, m2);
     try expect(std.mem.eql(cell_t, m1.data, result.data));
 }
 
@@ -152,7 +196,7 @@ test "multiply with identity matrix" {
 // a matrix which has all its cells equal to the size of their common dimension.
 test "multiply const matrix" {
     const cell_t = i32;
-    const size_m = 16;
+    const size_m = 22;
     const size_k = 24;
     const size_n = 20;
     var m1 = try Matrix(cell_t, size_m, size_k).init(const_filler(cell_t, 1));
@@ -161,37 +205,49 @@ test "multiply const matrix" {
     var m2 = try Matrix(cell_t, size_k, size_n).init(const_filler(cell_t, 1));
     defer m2.deinit();
 
-    const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
-
     var result = try Matrix(cell_t, size_m, size_n).init(null);
     defer result.deinit();
-    multiply(result, m1, m2);
+
     const size = size_m * size_n;
     const expected: [size]cell_t = [_]cell_t{size_k} ** size;
 
+    const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
+    multiply(result, m1, m2);
+    try expect(std.mem.eql(cell_t, &expected, result.data));
+
+    // repeate using use vectors
+    const vec_multiply = matrix_vec_multiply(cell_t, size_m, size_k, size_n);
+    result.data.* = [_]cell_t{0} ** (size);
+    vec_multiply(result, m1, m2);
     try expect(std.mem.eql(cell_t, &expected, result.data));
 }
 
-pub fn main() !void {
-    @setFloatMode(.optimized);
-
+fn parse_ntimes() !usize {
     const args = try std.process.argsAlloc(std.heap.page_allocator);
     defer std.process.argsFree(std.heap.page_allocator, args);
-    var ntimes: usize = 10;
+
+    var result: usize = 10;
     if (args.len >= 2) {
         if (std.fmt.parseUnsigned(usize, args[1], 0)) |times| {
-            ntimes = times;
+            result = times;
         } else |_| {
             std.debug.print("Invalid value '{s}' ignored\n", .{args[1]});
         }
     }
-    std.debug.print("Multiplication will be repeated {} times\n", .{ntimes});
+    return result;
+}
 
+fn perform(use_vectors: bool, ntimes: usize) !i64 {
     // Change the following values to experiment with different types and sizes
-    const size_m = 640;
-    const size_k = 512;
-    const size_n = 640;
     const cell_t = f64;
+    const size_m = 1024;
+    const size_k = 1280;
+    const size_n = 1024;
+
+    // 'multiply' and 'vec_multiply' are functions that multiply a MxK matrix with a KxN matrix
+    // and produce a MxN matrix.
+    const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
+    const vec_multiply = matrix_vec_multiply(cell_t, size_m, size_k, size_n);
 
     var m1 = try Matrix(cell_t, size_m, size_k).init(const_filler(cell_t, 1));
     std.debug.print("Matrix 1: {}x{}, type {}\n", .{ size_m, size_k, cell_t });
@@ -201,25 +257,42 @@ pub fn main() !void {
     std.debug.print("Matrix 2: {}x{}, type {}\n", .{ size_k, size_n, cell_t });
     defer m2.deinit();
 
-    // 'multiply' is a function that multiplies a MxK matrix with a KxN matrix
-    // and produces a MxN matrix.
-    const multiply = matrix_multiply(cell_t, size_m, size_k, size_n);
     var product = try Matrix(cell_t, size_m, size_n).init(null);
     defer product.deinit();
 
     const start_time = std.time.milliTimestamp();
-    for (0..ntimes) |_| {
-        multiply(product, m1, m2);
+    if (use_vectors) {
+        for (0..ntimes) |_| {
+            vec_multiply(product, m1, m2);
+        }
+    } else {
+        for (0..ntimes) |_| {
+            multiply(product, m1, m2);
+        }
     }
     const end_time = std.time.milliTimestamp();
 
     std.debug.print("Product : {}x{}, type {}\n", .{ size_m, size_n, cell_t });
-    const total_time = end_time - start_time;
-    const secs = @divFloor(total_time, 1000);
-    const msecs = @rem(total_time, 1000);
-    if (ntimes > 1) {
-        std.debug.print("Time for {} repetitions: {}s and {}ms\n", .{ ntimes, secs, msecs });
-    } else {
-        std.debug.print("Time: {}s and {}ms\n", .{ secs, msecs });
-    }
+    return end_time - start_time;
+}
+
+fn report(time_in_ms: i64, msg: []const u8) void {
+    const secs = @divFloor(time_in_ms, 1000);
+    const msecs = @rem(time_in_ms, 1000);
+    std.debug.print("{s}: {}s and {}ms\n-----\n", .{ msg, secs, msecs });
+}
+
+pub fn main() !void {
+    @setFloatMode(.optimized);
+
+    const ntimes = try parse_ntimes();
+    std.debug.print("Repetitions: {}\n*****\n", .{ntimes});
+
+    std.debug.print("Starting the no-vector variant...\n", .{});
+    const tt1 = try perform(false, ntimes);
+    report(tt1, "Time without vectors:");
+
+    std.debug.print("Starting the vector variant...\n", .{});
+    const tt2 = try perform(true, ntimes);
+    report(tt2, "Time with vectors:");
 }
