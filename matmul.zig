@@ -80,6 +80,9 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
 pub fn matrix_multiply(comptime t: type, m: comptime_int, k: comptime_int, n: comptime_int) (fn (Matrix(t, m, n), Matrix(t, m, k), Matrix(t, k, n)) void) {
     return struct {
         fn multiply(result: Matrix(t, m, n), m1: Matrix(t, m, k), m2: Matrix(t, k, n)) void {
+            if (@typeInfo(t) == .float) {
+                @setFloatMode(.optimized);
+            }
             for (0..n) |j| {
                 for (0..k) |kk| {
                     const m2_at_kk_j = m2.at(kk, j);
@@ -102,6 +105,9 @@ pub fn matrix_vec_multiply(comptime t: type, m: comptime_int, k: comptime_int, n
 
     return struct {
         fn multiply(result: Matrix(t, m, n), m1: Matrix(t, m, k), m2: Matrix(t, k, n)) void {
+            if (@typeInfo(t) == .float) {
+                @setFloatMode(.optimized);
+            }
             for (0..n) |j| {
                 for (0..k) |kk| {
                     const v2: @Vector(veclen, t) = @splat(m2.at(kk, j));
@@ -283,8 +289,6 @@ fn report(time_in_ms: i64, msg: []const u8) void {
 }
 
 pub fn main() !void {
-    @setFloatMode(.optimized);
-
     const ntimes = try parse_ntimes();
     std.debug.print("Repetitions: {}\n*****\n", .{ntimes});
 
