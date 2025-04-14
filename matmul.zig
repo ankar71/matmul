@@ -185,7 +185,7 @@ test "multiply with identity matrix" {
     multiply(result, m1, m2);
     try expect(std.mem.eql(cell_t, m1.data, result.data));
 
-    // repeate using use vectors
+    // repeate using vectors
     const vec_multiply = matrix_vec_multiply(cell_t, size, size, size);
     result.data.* = [_]cell_t{0} ** (size * size);
     vec_multiply(result, m1, m2);
@@ -215,7 +215,7 @@ test "multiply const matrix" {
     multiply(result, m1, m2);
     try expect(std.mem.eql(cell_t, &expected, result.data));
 
-    // repeate using use vectors
+    // repeate using vectors
     const vec_multiply = matrix_vec_multiply(cell_t, size_m, size_k, size_n);
     result.data.* = [_]cell_t{0} ** (size);
     vec_multiply(result, m1, m2);
