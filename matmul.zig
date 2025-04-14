@@ -283,9 +283,8 @@ fn perform(use_vectors: bool, ntimes: usize) !i64 {
 }
 
 fn report(time_in_ms: i64, msg: []const u8) void {
-    const secs = @divFloor(time_in_ms, 1000);
-    const msecs = @rem(time_in_ms, 1000);
-    std.debug.print("{s}: {}s and {}ms\n-----\n", .{ msg, secs, msecs });
+    const ms: f64 = @floatFromInt(time_in_ms);
+    std.debug.print("{s}: {d:4}s\n-----\n", .{ msg, ms / 1000 });
 }
 
 pub fn main() !void {
