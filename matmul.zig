@@ -56,17 +56,17 @@ pub fn Matrix(comptime t: type, rs: comptime_int, cs: comptime_int) type {
         // methods
 
         // Read a cell using column-major method
-        pub inline fn at(self: Self, row: usize, col: usize) t {
+        pub fn at(self: Self, row: usize, col: usize) t {
             return self.data[col * rs + row];
         }
 
-        pub inline fn slice_at(self: Self, row: usize, col: usize, slice_size: usize) []t {
+        pub fn slice_at(self: Self, row: usize, col: usize, slice_size: usize) []t {
             const offset: usize = col * rs + row;
             return self.data[offset..(offset + slice_size)];
         }
 
         // Set a cell to the given value using column-major method
-        pub inline fn set(self: Self, row: usize, col: usize, value: t) void {
+        pub fn set(self: Self, row: usize, col: usize, value: t) void {
             self.data[col * rs + row] = value;
         }
     };
